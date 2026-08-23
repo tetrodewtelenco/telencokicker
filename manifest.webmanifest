@@ -1,0 +1,16 @@
+{
+  "name": "Tel&Co Kicker League",
+  "short_name": "Kicker",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f2",
+  "theme_color": "#8BC53F",
+  "icons": [
+    {
+      "src": "./logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
