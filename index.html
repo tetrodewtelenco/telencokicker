@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7f3">
+  <title>Tel&Co Kicker League</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="./">
+    <img src="telco-logo.png" alt="Tel&Co">
+    <div><span>OFFICE LEAGUE</span><strong>KICKER</strong></div>
+  </a>
+  <nav>
+    <button class="ghost" id="refreshBtn">↻</button>
+    <a class="ghost tv" href="tv.html">TV MODE ↗</a>
+  </nav>
+</header>
+
+<main class="shell">
+  <section class="hero">
+    <div>
+      <span class="eyebrow">TEL&CO · SEASON 01</span>
+      <h1>Wie pakt #1?</h1>
+      <p>1v1. 2v2. ELO. Streaks. Rivalries. Alles telt.</p>
+    </div>
+    <button class="primary hero-btn" data-open-match>+ Nieuwe match</button>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <div><span class="eyebrow dark">TOP OF THE TABLE</span><h2>Podium</h2></div>
+      <span class="live"><i></i> LIVE</span>
+    </div>
+    <div id="podium" class="podium"></div>
+  </section>
+
+  <section id="statsGrid" class="stats-grid"></section>
+
+  <div class="main-grid">
+    <section class="panel">
+      <div class="panel-head">
+        <div><span class="eyebrow dark">STAND</span><h2>Leaderboard</h2></div>
+        <button class="soft" id="addPlayerBtn">+ Speler</button>
+      </div>
+      <div class="rank-head"><span>#</span><span>Speler</span><span>Vorm</span><span>ELO</span></div>
+      <div id="leaderboard"></div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-head"><div><span class="eyebrow dark">RECENT</span><h2>Laatste matchen</h2></div></div>
+      <div id="history" class="history"></div>
+    </aside>
+  </div>
+
+  <section class="panel insight-panel">
+    <div class="panel-head"><div><span class="eyebrow dark">ROTATION</span><h2>Wie moet ge nog uitdagen?</h2></div></div>
+    <div id="recommendations" class="recommendations"></div>
+  </section>
+
+  <div id="errorBox" class="error-box" hidden></div>
+</main>
+
+<div class="mobile-cta"><button class="primary" data-open-match>+ Match ingeven</button></div>
+
+<dialog id="matchDialog">
+<form id="matchForm" class="modal">
+  <div class="modal-head"><div><span class="eyebrow dark">RESULTAAT</span><h2>Nieuwe match</h2></div><button type="button" class="x" data-close>×</button></div>
+  <div class="mode-toggle">
+    <button type="button" class="mode active" data-mode="2v2">2 VS 2</button>
+    <button type="button" class="mode" data-mode="1v1">1 VS 1</button>
+  </div>
+  <div class="team-grid">
+    <section class="team">
+      <strong>TEAM A</strong>
+      <select id="a1" required></select>
+      <select id="a2" required></select>
+      <input id="scoreA" type="number" min="0" max="50" required placeholder="Score">
+    </section>
+    <div class="vs">VS</div>
+    <section class="team">
+      <strong>TEAM B</strong>
+      <select id="b1" required></select>
+      <select id="b2" required></select>
+      <input id="scoreB" type="number" min="0" max="50" required placeholder="Score">
+    </section>
+  </div>
+  <div id="matchError" class="form-error"></div>
+  <button class="primary full" type="submit">Match opslaan →</button>
+</form>
+</dialog>
+
+<dialog id="playerDialog">
+<form id="playerForm" class="modal small">
+  <div class="modal-head"><div><span class="eyebrow dark">SPELER</span><h2>Nieuwe speler</h2></div><button type="button" class="x" data-close>×</button></div>
+  <input id="playerName" type="text" placeholder="Naam" required>
+  <label class="upload-label">Profielfoto (optioneel)<input id="playerPhoto" type="file" accept="image/*"></label>
+  <div id="playerError" class="form-error"></div>
+  <button class="primary full" type="submit">Toevoegen →</button>
+</form>
+</dialog>
+
+<dialog id="profileDialog">
+<div class="modal profile-modal">
+  <div class="modal-head"><div><span class="eyebrow dark">PLAYER PROFILE</span><h2 id="profileName">Speler</h2></div><button type="button" class="x" data-close>×</button></div>
+  <div id="profileContent"></div>
+  <div class="profile-actions">
+    <input id="profilePhotoInput" type="file" accept="image/*" hidden>
+    <button type="button" class="soft" id="changePhotoBtn">Profielfoto wijzigen</button>
+    <div id="profilePhotoError" class="form-error"></div>
+  </div>
+</div>
+</dialog>
+
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
