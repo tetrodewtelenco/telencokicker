@@ -1,117 +1,129 @@
+const C=window.KICKER_CONFIG||{};
+const configured=C.SUPABASE_URL && !C.SUPABASE_URL.includes("VUL_HIER") && C.SUPABASE_ANON_KEY && !C.SUPABASE_ANON_KEY.includes("VUL_HIER");
+const db=configured?supabase.createClient(C.SUPABASE_URL,C.SUPABASE_ANON_KEY):null;
+let P=[],M=[],R={},format="2v2";
+const $=s=>document.querySelector(s);
+const initials=n=>n.split(/\s+/).map(x=>x[0]).slice(0,2).join("").toUpperCase();
+const pname=id=>(P.find(p=>p.id===id)||{}).name||"?";
+const avatar=p=>p.photo_url?`<img class="avatar" src="${p.photo_url}" alt="">`:`<div class="avatar">${initials(p.name)}</div>`;
 
-const cfg=window.TELCO_CONFIG||{};
-const configured=cfg.SUPABASE_URL&&!cfg.SUPABASE_URL.includes("PASTE_")&&cfg.SUPABASE_PUBLISHABLE_KEY&&!cfg.SUPABASE_PUBLISHABLE_KEY.includes("PASTE_");
-const db=configured?window.supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_PUBLISHABLE_KEY):null;
-let players=[],matches=[],selected={a1:null,a2:null,b1:null,b2:null},activeSlot=null,currentProfile=null,editingMatch=null,isAdmin=false;
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-function toast(m){const e=$("#toast");e.textContent=m;e.classList.add("show");clearTimeout(window.__t);window.__t=setTimeout(()=>e.classList.remove("show"),2100)}
-function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
-function initials(n){return n.trim().split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase()}
-function nav(p){$$(".page").forEach(x=>x.classList.toggle("active",x.id===p));$$("[data-nav]").forEach(x=>x.classList.toggle("active",x.dataset.nav===p));window.scrollTo({top:0,behavior:"smooth"})}
-$$("[data-nav]").forEach(b=>b.onclick=()=>nav(b.dataset.nav));
-
-function monthKey(d){d=new Date(d);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`}
-function monthName(key){const [y,m]=key.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("nl-BE",{month:"long",year:"numeric"})}
-function compute(matchSet=matches){
-  const s={};players.filter(p=>p.active!==false).forEach(p=>s[p.id]={id:p.id,name:p.name,rating:1000,matches:0,wins:0,losses:0,streak:0,best:0,gf:0,ga:0});
-  [...matchSet].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).forEach(m=>{
-    const A=[m.team_a1,m.team_a2],B=[m.team_b1,m.team_b2]; if(![...A,...B].every(id=>s[id]))return;
-    const ar=(s[A[0]].rating+s[A[1]].rating)/2,br=(s[B[0]].rating+s[B[1]].rating)/2,ea=1/(1+Math.pow(10,(br-ar)/400)),aa=m.score_a>m.score_b?1:0,d=32*(aa-ea);
-    A.forEach(id=>{let x=s[id];x.rating+=d;x.matches++;x.gf+=m.score_a;x.ga+=m.score_b;if(aa){x.wins++;x.streak=x.streak>=0?x.streak+1:1;x.best=Math.max(x.best,x.streak)}else{x.losses++;x.streak=x.streak<=0?x.streak-1:-1}});
-    B.forEach(id=>{let x=s[id];x.rating-=d;x.matches++;x.gf+=m.score_b;x.ga+=m.score_a;if(!aa){x.wins++;x.streak=x.streak>=0?x.streak+1:1;x.best=Math.max(x.best,x.streak)}else{x.losses++;x.streak=x.streak<=0?x.streak-1:-1}});
+function exp(a,b){return 1/(1+Math.pow(10,(b-a)/400))}
+function sidePlayers(m,side){
+  const a=side==="a";
+  return [a?m.team_a_player1:m.team_b_player1,a?m.team_a_player2:m.team_b_player2].filter(Boolean);
+}
+function calc(){
+  R={}; P.forEach(p=>R[p.id]={rating:1000,games:0,w:0,l:0,streak:0,delta:0,partners:new Set(),opponents:new Set(),onevone:0,twovtwo:0});
+  [...M].sort((a,b)=>new Date(a.played_at)-new Date(b.played_at)).forEach(m=>{
+    const A=sidePlayers(m,"a"),B=sidePlayers(m,"b");
+    if(!A.length||!B.length||!A.concat(B).every(id=>R[id]))return;
+    const ra=A.reduce((s,id)=>s+R[id].rating,0)/A.length;
+    const rb=B.reduce((s,id)=>s+R[id].rating,0)/B.length;
+    const aWin=+m.score_a>+m.score_b, ea=exp(ra,rb), d=Math.round(32*((aWin?1:0)-ea));
+    A.forEach(id=>{
+      const r=R[id];r.rating+=d;r.delta+=d;r.games++;aWin?r.w++:r.l++;
+      r.streak=aWin?Math.max(1,r.streak+1):Math.min(-1,r.streak-1);
+      (A.length===1&&B.length===1?r.onevone:r.twovtwo)++;
+      A.filter(x=>x!==id).forEach(x=>r.partners.add(x));B.forEach(x=>r.opponents.add(x));
+    });
+    B.forEach(id=>{
+      const r=R[id];r.rating-=d;r.delta-=d;r.games++;!aWin?r.w++:r.l++;
+      r.streak=!aWin?Math.max(1,r.streak+1):Math.min(-1,r.streak-1);
+      (A.length===1&&B.length===1?r.onevone:r.twovtwo)++;
+      B.filter(x=>x!==id).forEach(x=>r.partners.add(x));A.forEach(x=>r.opponents.add(x));
+    });
   });
-  return Object.values(s).map(x=>({...x,rating:Math.round(x.rating),winpct:x.matches?Math.round(x.wins/x.matches*100):0}));
 }
-function statsForMode(){const mode=$("#rankingMode").value;if(mode==="all")return compute();const k=monthKey(new Date());return compute(matches.filter(m=>monthKey(m.created_at)===k))}
-function rankSort(a,b){return b.rating-a.rating||b.winpct-a.winpct||b.matches-a.matches}
+function variation(id){
+  if(P.length<2)return 0;
+  const people=new Set([...R[id].partners,...R[id].opponents]);
+  return Math.min(100,Math.round(people.size/(P.length-1)*100));
+}
+function matchType(m){return sidePlayers(m,"a").length===1&&sidePlayers(m,"b").length===1?"1V1":"2V2"}
 
-async function loadAll(){
-  if(!db){$("#leaderboard").innerHTML='<div class="empty">Nog niet gekoppeld met Supabase. Vul <b>config.js</b> in.</div>';return}
-  const [p,m,u]=await Promise.all([db.from("players").select("*").order("name"),db.from("matches").select("*").order("created_at",{ascending:true}),db.auth.getUser()]);
-  if(p.error||m.error){console.error(p.error||m.error);return toast("Data laden mislukt")}
-  players=p.data||[];matches=m.data||[];isAdmin=!!u.data?.user;render();renderAdmin();
-}
 function render(){
-  const all=compute().sort(rankSort), shown=statsForMode().sort(rankSort), nowKey=monthKey(new Date());
-  $("#seasonLabel").textContent=`${monthName(nowKey)} · 2 vs 2`;
-  $("#leaderboard").innerHTML=shown.length?shown.map((s,i)=>`<div class="leader-row clickable" data-player="${s.id}"><div class="rank">${i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</div><div class="person"><strong>${esc(s.name)}</strong><small>${s.wins}W · ${s.losses}L · ${s.winpct}%${s.matches<10?" · voorlopig":""}</small></div><div class="rating"><strong>${s.rating}</strong><small>${s.streak>0?"🔥 W"+s.streak:s.streak<0?"L"+Math.abs(s.streak):"—"}</small></div></div>`).join(""):'<div class="empty">Nog geen spelers.</div>';
-  $$("#leaderboard [data-player]").forEach(e=>e.onclick=()=>openProfile(e.dataset.player));
-  const top=all[0];$("#topName").textContent=top?.name||"—";$("#topMeta").textContent=top?`${top.rating} ELO`:"—";
-  const hot=[...all].filter(x=>x.streak>0).sort((a,b)=>b.streak-a.streak)[0];$("#streakName").textContent=hot?.name||"—";$("#streakMeta").textContent=hot?`W${hot.streak} op rij`:"—";
-  $("#matchCount").textContent=matches.length;$("#monthCount").textContent=`${matches.filter(m=>monthKey(m.created_at)===nowKey).length} deze maand`;
-  renderPlayers(all);renderHistory();renderFun(all);renderHall();updatePickers();if(currentProfile)openProfile(currentProfile,false);
+  calc();
+  const sorted=[...P].sort((a,b)=>(R[b.id]?.rating||1000)-(R[a.id]?.rating||1000));
+  $("#podium").innerHTML=sorted.slice(0,3).map((p,i)=>`<article class="pod"><div class="rankwater">0${i+1}</div>${avatar(p)}<h3>${p.name}</h3><div class="rating">${Math.round(R[p.id].rating)}</div><div class="sub">${R[p.id].games} matchen · ${R[p.id].games?Math.round(R[p.id].w/R[p.id].games*100):0}% winrate</div></article>`).join("")||"<div>Nog geen spelers.</div>";
+  $("#ranking").innerHTML=sorted.map((p,i)=>`<div class="row"><div class="pos">${i+1}</div>${avatar(p)}<div><div class="name">${p.name}</div><div class="meta">${R[p.id].games} matchen · ${R[p.id].onevone}× 1v1 · ${R[p.id].twovtwo}× 2v2 · ${variation(p.id)}% variatie</div></div><div class="elo">${Math.round(R[p.id].rating)}</div></div>`).join("");
+  $("#recent").innerHTML=[...M].sort((a,b)=>new Date(b.played_at)-new Date(a.played_at)).slice(0,8).map(m=>{
+    const A=sidePlayers(m,"a").map(pname).join(" + "),B=sidePlayers(m,"b").map(pname).join(" + ");
+    return `<div class="match"><div class="matchline"><div class="team">${A}</div><div class="mscore">${m.score_a} — ${m.score_b}</div><div class="team right">${B}</div></div><span class="type-tag">${matchType(m)}</span><small>${new Date(m.played_at).toLocaleString("nl-BE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</small></div>`;
+  }).join("")||"Nog geen matchkes.";
+  const st=[...P].sort((a,b)=>(R[b.id]?.streak||0)-(R[a.id]?.streak||0))[0];
+  $("#streak").textContent=st&&R[st.id].streak>0?`${st.name} · W${R[st.id].streak}`:"—";
+  const cl=[...P].sort((a,b)=>(R[b.id]?.delta||0)-(R[a.id]?.delta||0))[0];
+  $("#climber").textContent=cl?`${cl.name} · ${R[cl.id].delta>=0?"+":""}${R[cl.id].delta}`:"—";
+  const va=[...P].sort((a,b)=>variation(b.id)-variation(a.id))[0];
+  $("#variation").textContent=va?`${va.name} · ${variation(va.id)}%`:"—";
+  const low=[...P].sort((a,b)=>(R[a.id]?.games||0)-(R[b.id]?.games||0)).slice(0,3);
+  $("#priority").textContent=low.map(x=>x.name.split(" ")[0]).join(" · ")||"—";
+  fillSelects();
 }
-function renderPlayers(stats){
-  const map=Object.fromEntries(stats.map(x=>[x.id,x]));const q=$("#playersSearch").value.toLowerCase();
-  const ps=players.filter(p=>p.active!==false&&p.name.toLowerCase().includes(q));
-  $("#playersList").innerHTML=ps.length?ps.map(p=>{const s=map[p.id];return `<div class="player-row clickable" data-player="${p.id}"><div class="player-main"><div class="avatar">${initials(p.name)}</div><div><strong>${esc(p.name)}</strong><small>${s?.rating||1000} ELO · ${s?.matches||0} matchen</small></div></div>${isAdmin?`<button class="admin-link" data-deactivate="${p.id}">beheer</button>`:""}</div>`}).join(""):'<div class="empty">Geen spelers gevonden.</div>';
-  $$("#playersList [data-player]").forEach(e=>e.onclick=ev=>{if(ev.target.dataset.deactivate)return;openProfile(e.dataset.player)});
-  $$("[data-deactivate]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();const id=b.dataset.deactivate;if(!confirm("Speler deactiveren? Historiek blijft behouden."))return;const {error}=await db.from("players").update({active:false}).eq("id",id);if(error)return toast("Mislukt");toast("Speler gedeactiveerd");});
+function fillSelects(){
+  ["a1","a2","b1","b2"].forEach(id=>{
+    const el=$("#"+id),old=el.value;
+    el.innerHTML='<option value="">Kies speler</option>'+P.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+    el.value=old;
+  })
 }
-function renderHistory(){
-  const n=Object.fromEntries(players.map(p=>[p.id,p.name]));
-  $("#historyList").innerHTML=matches.length?[...matches].reverse().map(m=>{const a=`${n[m.team_a1]||"?"} + ${n[m.team_a2]||"?"}`,b=`${n[m.team_b1]||"?"} + ${n[m.team_b2]||"?"}`,aw=m.score_a>m.score_b,date=new Date(m.created_at).toLocaleString("nl-BE",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});return `<div class="history-row"><div class="history-top"><small>${date}</small><strong>${m.score_a} – ${m.score_b}${isAdmin?`<button class="admin-link" data-edit="${m.id}">beheer</button>`:""}</strong></div><p><span class="${aw?"winner":""}">${esc(a)}</span><br><span class="${!aw?"winner":""}">${esc(b)}</span></p></div>`}).join(""):'<div class="empty">Nog geen matchen.</div>';
-  $$("[data-edit]").forEach(b=>b.onclick=()=>openEditMatch(b.dataset.edit));
+function setFormat(next){
+  format=next;
+  document.querySelectorAll(".format").forEach(b=>b.classList.toggle("active",b.dataset.format===next));
+  $("#a2").classList.toggle("hidden",next==="1v1");
+  $("#b2").classList.toggle("hidden",next==="1v1");
+  if(next==="1v1"){ $("#a2").value=""; $("#b2").value=""; }
 }
-function relationData(pid){
-  const mate={},opp={};
-  matches.forEach(m=>{const A=[m.team_a1,m.team_a2],B=[m.team_b1,m.team_b2],inA=A.includes(pid),inB=B.includes(pid);if(!inA&&!inB)return;const won=inA?m.score_a>m.score_b:m.score_b>m.score_a;const partner=(inA?A:B).find(x=>x!==pid);mate[partner]??={m:0,w:0};mate[partner].m++;if(won)mate[partner].w++;(inA?B:A).forEach(o=>{opp[o]??={m:0,w:0};opp[o].m++;if(won)opp[o].w++})});
-  return {mate,opp}
+document.querySelectorAll(".format").forEach(b=>b.onclick=()=>setFormat(b.dataset.format));
+
+async function load(){
+  if(!db){
+    P=[{id:"1",name:"Willem Tetrode"},{id:"2",name:"Siebe Luyten"},{id:"3",name:"Omar"},{id:"4",name:"Bo"},{id:"5",name:"Aya"},{id:"6",name:"Cyril"}];
+    M=[
+      {team_a_player1:"1",team_a_player2:"4",team_b_player1:"2",team_b_player2:"3",score_a:5,score_b:3,played_at:new Date().toISOString()},
+      {team_a_player1:"1",team_a_player2:null,team_b_player1:"2",team_b_player2:null,score_a:10,score_b:8,played_at:new Date(Date.now()-3600000).toISOString()}
+    ];
+    render();return;
+  }
+  const [{data:p,error:pe},{data:m,error:me}]=await Promise.all([db.from("players").select("*"),db.from("matches").select("*")]);
+  if(pe||me){console.error(pe||me);return}
+  P=p||[];M=m||[];render();
 }
-function renderFun(stats){
-  if(!stats.length){$("#funStats").innerHTML='<div class="empty">Nog geen data.</div>';return}
-  const most= [...stats].sort((a,b)=>b.matches-a.matches)[0],bestWin=[...stats].filter(x=>x.matches>=5).sort((a,b)=>b.winpct-a.winpct)[0],bestStreak=[...stats].sort((a,b)=>b.best-a.best)[0];
-  let bestDuo=null;const d={};matches.forEach(m=>[[m.team_a1,m.team_a2,m.score_a>m.score_b],[m.team_b1,m.team_b2,m.score_b>m.score_a]].forEach(([x,y,w])=>{const k=[x,y].sort().join("|");d[k]??={ids:[x,y],m:0,w:0};d[k].m++;if(w)d[k].w++}));Object.values(d).filter(x=>x.m>=3).forEach(x=>{x.p=x.w/x.m;if(!bestDuo||x.p>bestDuo.p||x.p===bestDuo.p&&x.m>bestDuo.m)bestDuo=x});
-  const names=Object.fromEntries(players.map(p=>[p.id,p.name]));
-  $("#funStats").innerHTML=[
-    ["🎮 Meeste matchen",most?`${esc(most.name)} · ${most.matches}`:"—"],
-    ["🎯 Beste winrate",bestWin?`${esc(bestWin.name)} · ${bestWin.winpct}%`:"min. 5 matchen"],
-    ["🔥 Beste streak",bestStreak?`${esc(bestStreak.name)} · W${bestStreak.best}`:"—"],
-    ["🤝 Beste duo",bestDuo?`${esc(names[bestDuo.ids[0]])} + ${esc(names[bestDuo.ids[1]])} · ${Math.round(bestDuo.p*100)}%`:"min. 3 samen"]
-  ].map(([a,b])=>`<div class="fun-card"><span>${a}</span><strong>${b}</strong></div>`).join("");
-}
-function renderHall(){
-  const keys=[...new Set(matches.map(m=>monthKey(m.created_at)))].sort().reverse(),now=monthKey(new Date());
-  const rows=keys.filter(k=>k!==now).map(k=>{const s=compute(matches.filter(m=>monthKey(m.created_at)===k)).sort(rankSort)[0];return s?`<div class="hall-row"><div><strong>${monthName(k)}</strong><br><small>${s.matches} matchen · ${s.winpct}% winrate</small></div><div><strong>🏆 ${esc(s.name)}</strong><br><small>${s.rating} maand-ELO</small></div></div>`:""}).join("");
-  $("#hallList").innerHTML=rows||'<div class="empty">De eerste maandkampioen verschijnt na afloop van deze maand.</div>';
-}
-function openProfile(id,go=true){
-  currentProfile=id;const all=compute().sort(rankSort),s=all.find(x=>x.id===id),p=players.find(x=>x.id===id);if(!s||!p)return;
-  $("#profileAvatar").textContent=initials(p.name);$("#profileName").textContent=p.name;$("#profileElo").textContent=`${s.rating} ELO`;$("#profileRank").textContent=`#${all.findIndex(x=>x.id===id)+1}`;
-  $("#profileCards").innerHTML=[["Matchen",s.matches],["Wins",s.wins],["Winrate",`${s.winpct}%`],["Beste streak",`W${s.best}`]].map(([a,b])=>`<div class="profile-card"><span>${a}</span><strong>${b}</strong></div>`).join("");
-  const {mate,opp}=relationData(id),names=Object.fromEntries(players.map(x=>[x.id,x.name]));
-  const arr=o=>Object.entries(o).map(([id,x])=>({id,...x,p:x.m?x.w/x.m:0}));const mates=arr(mate),opps=arr(opp);
-  const bestMate=[...mates].filter(x=>x.m>=2).sort((a,b)=>b.p-a.p||b.m-a.m)[0],worstMate=[...mates].filter(x=>x.m>=2).sort((a,b)=>a.p-b.p||b.m-a.m)[0],nemesis=[...opps].filter(x=>x.m>=2).sort((a,b)=>a.p-b.p||b.m-a.m)[0],victim=[...opps].filter(x=>x.m>=2).sort((a,b)=>b.p-a.p||b.m-a.m)[0];
-  const rel=[["🤝 Beste partner",bestMate],["🧊 Moeilijkste partner",worstMate],["☠️ Nemesis",nemesis],["🎯 Favoriete tegenstander",victim]];
-  $("#profileRelations").innerHTML=rel.map(([l,x])=>`<div class="relation-row"><div><strong>${l}</strong><br><small>${x?esc(names[x.id]):"Nog te weinig data"}</small></div><div>${x?`<strong>${Math.round(x.p*100)}%</strong><br><small>${x.w}/${x.m} gewonnen</small>`:""}</div></div>`).join("");
-  const relevant=matches.filter(m=>[m.team_a1,m.team_a2,m.team_b1,m.team_b2].includes(id)).slice(-8).reverse();
-  $("#profileHistory").innerHTML=relevant.length?relevant.map(m=>{const inA=[m.team_a1,m.team_a2].includes(id),won=inA?m.score_a>m.score_b:m.score_b>m.score_a;return `<div class="relation-row"><div><strong>${won?"✅ Winst":"❌ Verlies"}</strong><br><small>${new Date(m.created_at).toLocaleDateString("nl-BE")}</small></div><div><strong>${m.score_a}–${m.score_b}</strong></div></div>`}).join(""):'<div class="empty">Nog geen matchen.</div>';
-  if(go)nav("profile");
-}
-$("#backProfiles").onclick=()=>nav("players");$("#rankingMode").onchange=render;$("#playersSearch").oninput=()=>renderPlayers(compute());
+const openMatch=()=>{setFormat("2v2");matchDlg.showModal()};
+$("#newMatch").onclick=$("#mobileMatch").onclick=$("#heroMatch").onclick=openMatch;
+$("#addPlayer").onclick=()=>playerDlg.showModal();
 
-$$(".player-picker").forEach(b=>b.onclick=()=>{activeSlot=b.dataset.slot;$("#playerSearch").value="";renderPicker("");$("#playerModal").classList.add("show")});
-$("#playerSearch").oninput=e=>renderPicker(e.target.value);
-function renderPicker(q){const used=new Set(Object.entries(selected).filter(([k,v])=>k!==activeSlot&&v).map(x=>x[1]));const ps=players.filter(p=>p.active!==false&&!used.has(p.id)&&p.name.toLowerCase().includes(q.toLowerCase()));$("#pickerList").innerHTML=ps.map(p=>`<button class="picker-item" data-id="${p.id}"><div class="avatar">${initials(p.name)}</div>${esc(p.name)}</button>`).join("")||'<div class="empty">Geen spelers.</div>';$$("#pickerList .picker-item").forEach(b=>b.onclick=()=>{selected[activeSlot]=b.dataset.id;$("#playerModal").classList.remove("show");updatePickers()})}
-function updatePickers(){const n=Object.fromEntries(players.map(p=>[p.id,p.name]));$$(".player-picker").forEach(b=>{const id=selected[b.dataset.slot];b.textContent=id?n[id]:"+ Kies speler";b.classList.toggle("selected",!!id)})}
+$("#saveMatch").onclick=async()=>{
+  const ids=[$("#a1").value,$("#a2").value,$("#b1").value,$("#b2").value];
+  const used=format==="1v1"?[ids[0],ids[2]]:ids;
+  const sa=+$("#sa").value,sb=+$("#sb").value;
+  if(used.some(x=>!x)||new Set(used).size!==used.length||sa===sb||sa<0||sb<0){$("#mmsg").textContent="Kies geldige spelers en een geldige eindscore.";return}
+  if(!db){$("#mmsg").textContent="Demo-modus: vul eerst config.js in.";return}
+  const payload={team_a_player1:ids[0],team_a_player2:format==="2v2"?ids[1]:null,team_b_player1:ids[2],team_b_player2:format==="2v2"?ids[3]:null,score_a:sa,score_b:sb,match_type:format};
+  const {error}=await db.from("matches").insert(payload);
+  if(error){$("#mmsg").textContent=error.message;return}
+  matchDlg.close();await load();
+};
 
-$("#saveMatchBtn").onclick=async()=>{if(!db)return toast("Koppel eerst Supabase");const ids=[selected.a1,selected.a2,selected.b1,selected.b2],a=parseInt($("#scoreA").value),b=parseInt($("#scoreB").value);if(ids.some(x=>!x))return toast("Kies 4 spelers");if(new Set(ids).size!==4)return toast("Elke speler maar 1 keer");if(Number.isNaN(a)||Number.isNaN(b))return toast("Geef de score in");if(a===b)return toast("Geen gelijkspel");const {error}=await db.from("matches").insert({team_a1:selected.a1,team_a2:selected.a2,team_b1:selected.b1,team_b2:selected.b2,score_a:a,score_b:b});if(error){console.error(error);return toast("Opslaan mislukt")}selected={a1:null,a2:null,b1:null,b2:null};$("#scoreA").value="";$("#scoreB").value="";toast("Match opgeslagen ✓");nav("home")};
+$("#savePlayer").onclick=async()=>{
+  const name=$("#pname").value.trim(),file=$("#photo").files[0];
+  if(!name){$("#pmsg").textContent="Geef een naam in.";return}
+  if(!db){$("#pmsg").textContent="Demo-modus: vul eerst config.js in.";return}
+  let photo_url=null;
+  if(file){
+    const ext=(file.name.split(".").pop()||"jpg").toLowerCase(),path=`${crypto.randomUUID()}.${ext}`;
+    const up=await db.storage.from("avatars").upload(path,file);
+    if(up.error){$("#pmsg").textContent=up.error.message;return}
+    photo_url=db.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+  }
+  const {error}=await db.from("players").insert({name,photo_url});
+  if(error){$("#pmsg").textContent=error.message;return}
+  playerDlg.close();await load();
+};
 
-$("#addPlayerBtn").onclick=()=>{$("#newPlayerName").value="";$("#addModal").classList.add("show")};
-$("#createPlayerBtn").onclick=async()=>{const name=$("#newPlayerName").value.trim();if(!name)return toast("Vul een naam in");const {error}=await db.from("players").insert({name});if(error)return toast(error.code==="23505"?"Speler bestaat al":"Toevoegen mislukt");$("#addModal").classList.remove("show");toast("Speler toegevoegd")};
+if(db)db.channel("kicker-v4")
+  .on("postgres_changes",{event:"*",schema:"public",table:"matches"},load)
+  .on("postgres_changes",{event:"*",schema:"public",table:"players"},load)
+  .subscribe();
 
-function renderAdmin(){$("#adminLoggedOut").hidden=isAdmin;$("#adminLoggedIn").hidden=!isAdmin}
-$("#adminBtn").onclick=()=>{$("#adminModal").classList.add("show");renderAdmin()};
-$("#adminLoginBtn").onclick=async()=>{const email=$("#adminEmail").value.trim(),password=$("#adminPassword").value;const {error}=await db.auth.signInWithPassword({email,password});if(error)return toast("Login mislukt");isAdmin=true;renderAdmin();toast("Adminmodus actief");render()};
-$("#adminLogoutBtn").onclick=async()=>{await db.auth.signOut();isAdmin=false;renderAdmin();render();toast("Uitgelogd")};
-
-function openEditMatch(id){editingMatch=matches.find(m=>m.id===id);if(!editingMatch)return;const n=Object.fromEntries(players.map(p=>[p.id,p.name]));$("#editMatchText").textContent=`${n[editingMatch.team_a1]} + ${n[editingMatch.team_a2]} vs ${n[editingMatch.team_b1]} + ${n[editingMatch.team_b2]}`;$("#editScoreA").value=editingMatch.score_a;$("#editScoreB").value=editingMatch.score_b;$("#editMatchModal").classList.add("show")}
-$("#updateMatchBtn").onclick=async()=>{const a=parseInt($("#editScoreA").value),b=parseInt($("#editScoreB").value);if(a===b||Number.isNaN(a)||Number.isNaN(b))return toast("Ongeldige score");const {error}=await db.from("matches").update({score_a:a,score_b:b}).eq("id",editingMatch.id);if(error)return toast("Aanpassen mislukt");$("#editMatchModal").classList.remove("show");toast("Match aangepast")};
-$("#deleteMatchBtn").onclick=async()=>{if(!confirm("Match definitief verwijderen?"))return;const {error}=await db.from("matches").delete().eq("id",editingMatch.id);if(error)return toast("Verwijderen mislukt");$("#editMatchModal").classList.remove("show");toast("Match verwijderd")};
-
-$$(".modal .close").forEach(b=>b.onclick=()=>b.closest(".modal").classList.remove("show"));$$(".modal").forEach(m=>m.onclick=e=>{if(e.target===m)m.classList.remove("show")});
-$("#syncBtn").onclick=loadAll;
-
-if(db){db.channel("telco-kicker-live").on("postgres_changes",{event:"*",schema:"public",table:"players"},()=>loadAll()).on("postgres_changes",{event:"*",schema:"public",table:"matches"},()=>loadAll()).subscribe()}
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
-loadAll();
+load();
