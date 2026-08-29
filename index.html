@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f6f8f5">
+  <title>Tel&Co Kicker League</title>
+  <meta name="description" content="De interne Tel&Co Kicker League.">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+  <div class="noise"></div>
+
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="Tel&Co Kicker League">
+      <img src="telco-logo.png" alt="Tel&Co" class="brand-logo">
+      <div class="brand-copy">
+        <span>OFFICE LEAGUE</span>
+        <strong>KICKER</strong>
+      </div>
+    </a>
+    <div class="top-actions">
+      <button class="icon-btn" id="refreshBtn" aria-label="Vernieuwen" title="Vernieuwen">↻</button>
+      <a class="tv-link" href="tv.html">TV MODE <span>↗</span></a>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="kicker">TEL&CO · SEASON 01</div>
+        <h1>De ranking liegt niet.</h1>
+        <p>Matchkes spelen. Punten pakken. Collega's kloppen.</p>
+      </div>
+      <button class="add-match hero-cta" data-open-match>
+        <span class="plus">+</span>
+        <span>Nieuwe match</span>
+      </button>
+    </section>
+
+    <section class="podium-wrap">
+      <div class="section-title-row">
+        <div>
+          <span class="section-kicker">TOP OF THE TABLE</span>
+          <h2>Podium</h2>
+        </div>
+        <div id="liveBadge" class="live-badge"><i></i> LIVE</div>
+      </div>
+      <div id="podium" class="podium">
+        <div class="skeleton-card"></div><div class="skeleton-card hero-skeleton"></div><div class="skeleton-card"></div>
+      </div>
+    </section>
+
+    <section class="stat-strip" id="statStrip">
+      <article><span>🔥 Hot streak</span><strong>—</strong><small>nog aan het laden</small></article>
+      <article><span>⚡ Meest actief</span><strong>—</strong><small>nog aan het laden</small></article>
+      <article><span>🎯 Winrate king</span><strong>—</strong><small>nog aan het laden</small></article>
+      <article><span>⚔️ Matchen</span><strong>—</strong><small>dit seizoen</small></article>
+    </section>
+
+    <div class="content-grid">
+      <section class="panel ranking-panel">
+        <div class="panel-head">
+          <div><span class="section-kicker">STAND</span><h2>Leaderboard</h2></div>
+          <button id="addPlayerBtn" class="soft-btn">+ Speler</button>
+        </div>
+        <div class="ranking-head">
+          <span>#</span><span>Speler</span><span>Vorm</span><span>ELO</span>
+        </div>
+        <div id="leaderboard" class="leaderboard">
+          <div class="loading-row">Ranking laden…</div>
+        </div>
+      </section>
+
+      <section class="panel latest-panel">
+        <div class="panel-head">
+          <div><span class="section-kicker">RECENT</span><h2>Laatste matchen</h2></div>
+        </div>
+        <div id="history" class="history">
+          <div class="loading-row">Matchen laden…</div>
+        </div>
+      </section>
+    </div>
+
+    <section class="mobile-match-bar">
+      <button class="add-match" data-open-match><span class="plus">+</span><span>Match ingeven</span></button>
+    </section>
+
+    <div id="errorBox" class="error-box" hidden></div>
+  </main>
+
+  <dialog id="matchDialog" class="dialog">
+    <form id="matchForm" class="modal">
+      <div class="modal-head">
+        <div><span class="section-kicker">RESULTAAT</span><h2>Nieuwe match</h2></div>
+        <button type="button" class="close-btn" data-close>×</button>
+      </div>
+      <div class="team-grid">
+        <section class="team team-a">
+          <div class="team-label">TEAM A</div>
+          <select id="a1" required><option value="">Speler 1</option></select>
+          <select id="a2" required><option value="">Speler 2</option></select>
+          <label class="score-field"><span>Score</span><input id="scoreA" type="number" min="0" max="50" inputmode="numeric" required placeholder="10"></label>
+        </section>
+        <div class="versus">VS</div>
+        <section class="team team-b">
+          <div class="team-label">TEAM B</div>
+          <select id="b1" required><option value="">Speler 1</option></select>
+          <select id="b2" required><option value="">Speler 2</option></select>
+          <label class="score-field"><span>Score</span><input id="scoreB" type="number" min="0" max="50" inputmode="numeric" required placeholder="7"></label>
+        </section>
+      </div>
+      <div id="matchError" class="form-error"></div>
+      <button type="submit" class="submit-btn">Match opslaan <span>→</span></button>
+    </form>
+  </dialog>
+
+  <dialog id="playerDialog" class="dialog small-dialog">
+    <form id="playerForm" class="modal">
+      <div class="modal-head">
+        <div><span class="section-kicker">NIEUW</span><h2>Speler toevoegen</h2></div>
+        <button type="button" class="close-btn" data-close>×</button>
+      </div>
+      <label class="text-field"><span>Naam</span><input id="playerName" type="text" maxlength="60" autocomplete="off" placeholder="Voornaam" required></label>
+      <div id="playerError" class="form-error"></div>
+      <button type="submit" class="submit-btn">Toevoegen <span>→</span></button>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

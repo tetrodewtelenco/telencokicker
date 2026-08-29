@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tel&Co Kicker · TV</title>
+  <link rel="stylesheet" href="tv.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+  <header>
+    <div class="brand"><img src="telco-logo.png" alt="Tel&Co"><div><span>OFFICE LEAGUE · LIVE</span><strong>KICKER</strong></div></div>
+    <img src="business-partner.png" class="partner" alt="Business Partner">
+  </header>
+  <main>
+    <section class="top">
+      <div><span class="eyebrow">TEL&CO KICKER LEAGUE</span><h1>Wie pakt #1?</h1></div>
+      <div class="clock" id="clock">--:--</div>
+    </section>
+    <section id="podium" class="podium"></section>
+    <section class="ticker-grid">
+      <article><span>🔥 HOT STREAK</span><strong id="hot">—</strong><small id="hotMeta">—</small></article>
+      <article><span>⚡ MEEST ACTIEF</span><strong id="active">—</strong><small id="activeMeta">—</small></article>
+      <article><span>🎯 WINRATE KING</span><strong id="win">—</strong><small id="winMeta">—</small></article>
+      <article><span>⚔️ LAATSTE MATCH</span><strong id="last">—</strong><small id="lastMeta">—</small></article>
+    </section>
+    <div id="error"></div>
+  </main>
+  <div id="flash" class="flash"><div class="flash-card"><span>FINAL</span><h2 id="flashTeams"></h2><div id="flashScore" class="flash-score"></div></div></div>
+  <script src="tv.js"></script>
+</body>
+</html>
