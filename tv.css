@@ -1,0 +1,9 @@
+
+:root{--green:#80c342;--ink:#111;--muted:#70747a;--line:#e7e8ea}
+*{box-sizing:border-box}body{margin:0;background:#f4f5f6;color:var(--ink);font-family:Inter,Arial,sans-serif}
+header{height:110px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:16px 30px}
+.logo{height:58px}.partner{height:54px}h1{margin:2px 0;font-size:34px}.small{font-size:12px;font-weight:900;letter-spacing:.2em;color:var(--green)}
+main{padding:28px}.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.pod{background:#fff;border:1px solid var(--line);border-radius:26px;padding:24px;text-align:center;min-height:220px;display:flex;flex-direction:column;justify-content:center}.pod .pos{font-size:42px;font-weight:1000}.pod .name{font-size:28px;font-weight:1000}.pod .rating{font-size:18px;color:var(--muted);margin-top:8px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:18px}.tile{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px}.tile span{font-size:12px;font-weight:900;letter-spacing:.1em;color:var(--muted)}.tile strong{display:block;font-size:24px;margin-top:10px}
+#status{padding:0 28px;color:#b00020;font-weight:800}
+@media(max-width:900px){.podium{grid-template-columns:1fr}.tiles{grid-template-columns:1fr 1fr}header{height:auto}.partner{display:none}}

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#ffffff" />
+  <title>Tel&Co Kicker League</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="telco-logo.png" alt="Tel&Co" class="logo" />
+      <div>
+        <div class="eyebrow">OFFICE SEASON 2026</div>
+        <h1>Tel&Co Kicker League</h1>
+      </div>
+    </div>
+    <a class="tv-btn" href="tv.html">TV MODE</a>
+  </header>
+
+  <main class="wrap">
+    <section class="hero card">
+      <div>
+        <div class="eyebrow green">KICKER LEAGUE</div>
+        <h2>Wie is hier écht de beste?</h2>
+        <p>1v1 & 2v2. Elke match telt mee voor je rating.</p>
+      </div>
+      <button id="openMatch" class="primary">+ MATCH</button>
+    </section>
+
+    <section class="grid-3">
+      <article class="stat card">
+        <span>Hot streak</span><strong id="hotStreak">—</strong>
+      </article>
+      <article class="stat card">
+        <span>Beste variatie</span><strong id="variationKing">—</strong>
+      </article>
+      <article class="stat card">
+        <span>Laatste match</span><strong id="lastMatchMini">—</strong>
+      </article>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">RANKING</div>
+          <h3>Leaderboard</h3>
+        </div>
+        <button id="openPlayer" class="ghost">+ SPELER</button>
+      </div>
+      <div id="ranking" class="ranking"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">RECENT</div>
+          <h3>Laatste matchen</h3>
+        </div>
+      </div>
+      <div id="matches" class="matches"></div>
+    </section>
+
+    <div id="status" class="status"></div>
+  </main>
+
+  <dialog id="matchDialog">
+    <form method="dialog" class="modal-card" id="matchForm">
+      <div class="modal-head">
+        <h3>Match ingeven</h3>
+        <button class="x" value="cancel">×</button>
+      </div>
+      <div class="toggle">
+        <button type="button" class="toggle-btn active" data-type="2v2">2 VS 2</button>
+        <button type="button" class="toggle-btn" data-type="1v1">1 VS 1</button>
+      </div>
+      <input type="hidden" id="matchType" value="2v2" />
+      <div class="teams">
+        <div class="team-box">
+          <h4>Team A</h4>
+          <select id="a1" required></select>
+          <select id="a2" required></select>
+          <input id="scoreA" type="number" min="0" required placeholder="Score" />
+        </div>
+        <div class="team-box">
+          <h4>Team B</h4>
+          <select id="b1" required></select>
+          <select id="b2" required></select>
+          <input id="scoreB" type="number" min="0" required placeholder="Score" />
+        </div>
+      </div>
+      <button class="primary full" type="submit">MATCH OPSLAAN</button>
+    </form>
+  </dialog>
+
+  <dialog id="playerDialog">
+    <form method="dialog" class="modal-card" id="playerForm">
+      <div class="modal-head">
+        <h3>Speler toevoegen</h3>
+        <button class="x" value="cancel">×</button>
+      </div>
+      <input id="playerName" type="text" required placeholder="Naam" />
+      <button class="primary full" type="submit">SPELER TOEVOEGEN</button>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
